@@ -1,12 +1,16 @@
 version: "3"
 services:
   crt-redis:
+    container_name: crt-redis
     image: redis:6.2-alpine
     restart: always
     ports:
       - '6379:6379'
+    networks:
+      - crt-net
 
   crt-rabbitmq:
+    container_name: crt-rabbitmq
     image: rabbitmq:latest
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-admin}
@@ -14,6 +18,8 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
+    networks:
+      - crt-net
 
   crt-steps:
     image: crt-steps
@@ -32,12 +38,12 @@ services:
       - '../services/steps-svc:/home/app'
     ports:
       - 3816:3000
-    networks:
-      - crt-net
     # command: sh -c "./start.sh"
     command: -f /dev/null
     entrypoint: /usr/bin/tail
     tty: true
+    networks:
+      - crt-net
 
 networks:
   crt-net:
