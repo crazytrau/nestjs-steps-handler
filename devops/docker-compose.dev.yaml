@@ -1,0 +1,44 @@
+version: "3"
+services:
+  crt-redis:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+
+  crt-rabbitmq:
+    image: rabbitmq:latest
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-admin}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-admin}
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+  crt-steps:
+    image: crt-steps
+    container_name: crt-steps
+    environment:
+      - PORT=3000
+    env_file:
+      - .env.example
+    build:
+      context: ./
+      dockerfile: Dockerfile.dev
+    depends_on:
+      - crt-redis
+      - crt-rabbitmq
+    volumes:
+      - '../services/steps-svc:/home/app'
+    ports:
+      - 3816:3000
+    networks:
+      - crt-net
+    # command: sh -c "./start.sh"
+    command: -f /dev/null
+    entrypoint: /usr/bin/tail
+    tty: true
+
+networks:
+  crt-net:
+    driver: bridge
