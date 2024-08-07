@@ -11,13 +11,13 @@ services:
 
   crt-rabbitmq:
     container_name: crt-rabbitmq
-    image: rabbitmq:latest
+    image: rabbitmq:management
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-admin}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-admin}
     ports:
-      - 5672:5672
-      - 15672:15672
+      - '5672:5672'
+      - '15672:15672'
     networks:
       - crt-net
 
@@ -38,10 +38,10 @@ services:
       - '../services/steps-svc:/home/app'
     ports:
       - 3816:3000
-    # command: sh -c "./start.sh"
-    command: -f /dev/null
-    entrypoint: /usr/bin/tail
-    tty: true
+    command: sh -c "./start.sh"
+    # command: -f /dev/null
+    # entrypoint: /usr/bin/tail
+    # tty: true
     networks:
       - crt-net
 

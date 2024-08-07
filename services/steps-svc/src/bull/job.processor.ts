@@ -1,9 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
+import { InjectQueue, Processor } from '@nestjs/bull';
 import { Queue, Job } from 'bull';
 import { RedisService } from './redis.service';
 
-@Injectable()
+@Processor('jobQueue')
 export class JobProcessor {
   private redisClient = this.redisService.getClient();
 
