@@ -25,7 +25,9 @@ services:
     image: crt-steps
     container_name: crt-steps
     environment:
+      - NAME=crt-steps
       - PORT=3000
+      - MASTER=1
     env_file:
       - .env.example
     build:
@@ -38,6 +40,52 @@ services:
       - '../services/steps-svc:/home/app'
     ports:
       - 3816:3000
+    command: sh -c "./start.sh"
+    # command: -f /dev/null
+    # entrypoint: /usr/bin/tail
+    # tty: true
+    networks:
+      - crt-net
+
+  crt-steps-worker-1:
+    image: crt-steps
+    container_name: crt-steps-worker-1
+    environment:
+      - NAME=crt-steps-worker-1
+      - PORT=3000
+    env_file:
+      - .env.example
+    build:
+      context: ./
+      dockerfile: Dockerfile.dev
+    depends_on:
+      - crt-redis
+      - crt-rabbitmq
+    volumes:
+      - '../services/steps-svc:/home/app'
+    command: sh -c "./start.sh"
+    # command: -f /dev/null
+    # entrypoint: /usr/bin/tail
+    # tty: true
+    networks:
+      - crt-net
+
+  crt-steps-worker-2:
+    image: crt-steps
+    container_name: crt-steps-worker-2
+    environment:
+      - NAME=crt-steps-worker-2
+      - PORT=3000
+    env_file:
+      - .env.example
+    build:
+      context: ./
+      dockerfile: Dockerfile.dev
+    depends_on:
+      - crt-redis
+      - crt-rabbitmq
+    volumes:
+      - '../services/steps-svc:/home/app'
     command: sh -c "./start.sh"
     # command: -f /dev/null
     # entrypoint: /usr/bin/tail

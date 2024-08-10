@@ -13,17 +13,6 @@ export class JobProducerService {
         port: parseInt(process.env.REDIS_PORT),
       },
     });
-
-    [...Array(10)].forEach((e, i) => {
-      const data = {
-        index: i,
-      };
-      console.debug(
-        data,
-        `💀 ${new Date().toISOString()} ~ file: job-producer.service.ts:21 ~ JobProducerService ~ [...Array ~ data:`,
-      );
-      this.addJob(data);
-    });
   }
 
   async addJob(data: any) {

@@ -2,8 +2,11 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { JobProcessorService } from './job-processor.service';
+import { BullController } from './bullmq.controller';
+import { JobProducerService } from './job-producer.service';
 
 @Module({
+  controllers: [BullController],
   imports: [
     BullModule.forRoot({
       connection: {
@@ -15,6 +18,6 @@ import { JobProcessorService } from './job-processor.service';
       name: 'jobs',
     }),
   ],
-  providers: [JobProcessorService],
+  providers: [JobProcessorService, JobProducerService],
 })
 export class QueueModule {}

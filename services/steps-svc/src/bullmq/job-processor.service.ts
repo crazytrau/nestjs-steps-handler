@@ -11,12 +11,22 @@ export class JobProcessorService {
       'jobs',
       async (job: Job) => {
         try {
-          console.log('Processing job', job.id, job.data);
           // Simulate work
           if (Math.random() < 0.5) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise<void>((resolve) =>
+              setTimeout(() => {
+                console.debug(
+                  `💀 ${new Date().toISOString()} ~ file: job-processor.service.ts:25 ~ JobProcessorService ~ 'Processing job', job.id, job.data:`,
+                  'Processing job',
+                  process.env.NAME,
+                  job.id,
+                  job.data,
+                );
+                return resolve();
+              }, 5000),
+            );
           } else {
-            throw new Error(`Test ${job.id}.${job.data?.index}`)
+            throw new Error(`Test ${job.id}.${job.data?.index}`);
           }
         } catch (error) {
           console.error('Job failed', job.id, error);
