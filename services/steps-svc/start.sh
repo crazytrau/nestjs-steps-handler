@@ -1,3 +1,3 @@
 #!/bin/bash
-pnpm i -y
+pnpm i
 clear; pnpm start:dev

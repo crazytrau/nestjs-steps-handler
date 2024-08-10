@@ -1,11 +1,10 @@
+// app.module.ts
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { CrtBullModule } from './bull/bull.module';
+import { JobProducerService } from './bullmq/job-producer.service';
+import { QueueModule } from './bullmq/queue.module';
 
 @Module({
-  imports: [CrtBullModule],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [QueueModule],
+  providers: [JobProducerService],
 })
 export class AppModule {}
