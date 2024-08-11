@@ -74,32 +74,33 @@ export class JobProducerService {
         throw new Error(`Parent job with ID ${parentJob.id} not found`);
       }
 
-      const childParams = [
-        'childJob',
-        { parentId: parentJob.id, ...data },
-        {
-          parent: {
-            id: parentJob.id,
-            queue: 'jobs', // Ensure this matches the parent job queue
-          },
-          attempts: 5,
-          backoff: 5000,
-        } as JobsOptions,
-      ];
-      this.logger.debug({
-        log: `💀 ${new Date().toISOString()} ~ file: job-producer.service.ts:68 ~ JobProducerService ~ addParentJob ~ childParams:`,
-        childParams,
-      });
       // Add child job under the parent job
-      await this.queue.add(childParams[0], childParams[1], childParams[2]);
+      await Promise.allSettled(
+        [...Array(3)].map((_, childIndex) => {
+          this.queue.add(
+            'childJob',
+            {
+              parentId: parentJob.id,
+              ...data,
+              childId: `${parentJob.id}-${childIndex}`,
+            },
+            {
+              attempts: 5,
+              backoff: 5000,
+            } as JobsOptions,
+          );
+        }),
+      );
 
       this.logger.debug(
         `Parent and child jobs added successfully with data: ${JSON.stringify(data)}`,
       );
     } catch (error) {
-      this.logger.error(
-        `Failed to add parent and child jobs with data: ${JSON.stringify(data)}. Error: ${error.message}`,
-      );
+      this.logger.error({
+        log: `Failed to add parent and child jobs with data: ${JSON.stringify(data)}. Error: ${error.message}`,
+        name: error.name,
+        message: error.message,
+      });
     }
   }
 }
