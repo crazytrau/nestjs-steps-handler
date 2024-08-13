@@ -1,26 +1,88 @@
 // job-producer.service.ts
+import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
-import { JobsOptions, Queue, QueueEvents } from 'bullmq';
+import { Queue, QueueEvents } from 'bullmq';
 
 @Injectable()
 export class JobProducerService {
   private readonly logger = new Logger(JobProducerService.name);
-  private queue: Queue;
   private queueEvents: QueueEvents;
 
-  constructor() {
-    this.queue = new Queue('jobs', {
-      connection: {
-        host: process.env.REDIS_HOST,
-        port: parseInt(process.env.REDIS_PORT),
-      },
-    });
+  constructor(@InjectQueue('jobs') private readonly queue: Queue) {
     this.queueEvents = new QueueEvents('jobs', {
       connection: {
         host: process.env.REDIS_HOST,
-        port: parseInt(process.env.REDIS_PORT),
+        port: parseInt(process.env.REDIS_PORT, 10) || 6379,
       },
     });
+  }
+
+  async onModuleInit() {
+    // Wait for the parent job to complete
+    if (process.env.MASTER) {
+      this.queueEvents.on(
+        'completed',
+        async (
+          args: {
+            jobId: string;
+            returnvalue: string;
+            prev?: string;
+          },
+          id: string,
+        ) => {
+          this.logger.error(
+            { args, id },
+            `💀 ${new Date().toISOString()} ~ file: job-producer.service.ts:45 ~ JobProducerService ~ this.queueEvents.on ~ jobId:`,
+          );
+          const { jobId } = args;
+          const parentJob = await this.queue.getJob(jobId);
+          if (
+            parentJob &&
+            parentJob.name === 'parentJob' &&
+            parentJob.id === '2'
+          ) {
+            switch (parentJob.id) {
+              case '2':
+                this.logger.debug(`Parent job ${2} completed successfully`);
+
+                // Add child jobs only after the parent job completes
+                await Promise.allSettled(
+                  [...Array(100)].map((_, childIndex) =>
+                    this.queue.add(
+                      'childJob',
+                      {
+                        parentId: 2,
+                        childId: `${2}-${childIndex + 1}`,
+                        parentJob,
+                      },
+                      {
+                        attempts: 5,
+                        backoff: 5000,
+                      },
+                    ),
+                  ),
+                );
+
+                this.logger.debug(
+                  `Child jobs added successfully for parent job ${2}`,
+                );
+
+                this.queue.getJob('1').then(async (job1) => {
+                  this.logger.debug(
+                    { job1 },
+                    `💀 ${new Date().toISOString()} SYNCCCCCC`,
+                  );
+                  job1.remove();
+                });
+                break;
+
+              default:
+                break;
+            }
+          }
+        },
+      );
+    }
   }
 
   async addJob(data: any): Promise<void> {
@@ -49,51 +111,6 @@ export class JobProducerService {
       });
       this.logger.debug(
         `Parent job added with ID: ${parentJob.id} and data: ${JSON.stringify(data)}`,
-      );
-
-      // Ensure the parent job is persisted and available
-      await this.queue.getJob(parentJob.id); // Confirm the job exists
-
-      // // Wait until the parent job is completed
-      // const responseUntilFinish = await parentJob.waitUntilFinished(
-      //   this.queueEvents,
-      //   60000,
-      // );
-      // this.logger.debug({
-      //   responseUntilFinish,
-      //   log: `💀 ${new Date().toISOString()} ~ file: job-producer.service.ts:56 ~ JobProducerService ~ addParentJob ~ responseUntilFinish:`,
-      // });
-
-      // Check if the parent job exists in the queue
-      const existingParentJob = await this.queue.getJob(parentJob.id);
-      this.logger.debug({
-        log: `💀 ${new Date().toISOString()} ~ file: job-producer.service.ts:69 ~ JobProducerService ~ addParentJob ~ existingParentJob:`,
-        existingParentJob,
-      });
-      if (!existingParentJob) {
-        throw new Error(`Parent job with ID ${parentJob.id} not found`);
-      }
-
-      // Add child job under the parent job
-      await Promise.allSettled(
-        [...Array(3)].map((_, childIndex) => {
-          this.queue.add(
-            'childJob',
-            {
-              parentId: parentJob.id,
-              ...data,
-              childId: `${parentJob.id}-${childIndex}`,
-            },
-            {
-              attempts: 5,
-              backoff: 5000,
-            } as JobsOptions,
-          );
-        }),
-      );
-
-      this.logger.debug(
-        `Parent and child jobs added successfully with data: ${JSON.stringify(data)}`,
       );
     } catch (error) {
       this.logger.error({

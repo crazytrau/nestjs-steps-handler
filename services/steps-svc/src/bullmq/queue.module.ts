@@ -11,7 +11,7 @@ import { JobProducerService } from './job-producer.service';
     BullModule.forRoot({
       connection: {
         host: process.env.REDIS_HOST,
-        port: parseInt(process.env.REDIS_PORT),
+        port: parseInt(process.env.REDIS_PORT, 10) || 6379,
       },
     }),
     BullModule.registerQueue({
@@ -19,5 +19,6 @@ import { JobProducerService } from './job-producer.service';
     }),
   ],
   providers: [JobProcessorService, JobProducerService],
+  exports: [JobProducerService],
 })
 export class QueueModule {}

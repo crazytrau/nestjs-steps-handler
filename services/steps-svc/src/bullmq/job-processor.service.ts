@@ -10,6 +10,7 @@ export class JobProcessorService {
   constructor() {
     this.worker = new Worker(
       'jobs',
+      
       async (job: Job) => {
         this.logger.debug({
           job,
@@ -29,20 +30,44 @@ export class JobProcessorService {
             });
             // Logic for processing parent job
             // Optionally create child jobs here if needed
-            return {
-              log: `return parentJob`,
-              id: job.id,
-            };
+            return await new Promise<any>((resolve) =>
+              setTimeout(() => {
+                console.debug(
+                  `💀 ${new Date().toISOString()} ~ file: job-processor.service.ts:25 ~ JobProcessorService ~ 'Processing job', job.id, job.data:`,
+                  'Processing job',
+                  process.env.NAME,
+                  job.id,
+                  job.data,
+                );
+                return resolve({
+                  log: `return parentJob`,
+                  id: job.id,
+                  svc: process.env.NAME,
+                });
+              }, 10000),
+            );
           } else if (job.name === 'childJob') {
             this.logger.debug({
               ctx,
               log: `Processing child job ${job.id} with data:`,
             });
             // Logic for processing child job
-            return {
-              log: `return childJob`,
-              id: job.id,
-            };
+            return await new Promise<any>((resolve) =>
+              setTimeout(() => {
+                console.debug(
+                  `💀 ${new Date().toISOString()} ~ file: job-processor.service.ts:25 ~ JobProcessorService ~ 'Processing job', job.id, job.data:`,
+                  'Processing job',
+                  process.env.NAME,
+                  job.id,
+                  job.data,
+                );
+                return resolve({
+                  log: `return childJob`,
+                  id: job.id,
+                  svc: process.env.NAME,
+                });
+              }, 5000),
+            );
           } else if (job.name === 'job') {
             // Simulate work
             if (Math.random() < 0.5) {
@@ -74,7 +99,7 @@ export class JobProcessorService {
           host: process.env.REDIS_HOST,
           port: parseInt(process.env.REDIS_PORT),
         },
-        concurrency: 1,
+        concurrency: 20,
       },
     );
   }
